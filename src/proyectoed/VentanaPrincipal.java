@@ -1,6 +1,8 @@
 package proyectoed;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -17,14 +19,28 @@ public class VentanaPrincipal extends JFrame {
     private DefaultTableModel modeloEncuentros;
     private DefaultTableModel modeloInscritos;
     private DefaultTableModel modeloTienda;
+    private DefaultTableModel modeloTrueques;
 
     private JTextField txtActividad, txtDescripcion, txtFecha, txtHora;
     private JTextField txtConceptoBono, txtMontoBono;
+    private JTextField txtOfrecidoTrueque, txtSolicitadoTrueque;
 
     private final Color AZUL_UNAB_TEC = new Color(0, 91, 171);
     private final Color BLANCO = new Color(255, 255, 255);
     private final Color NEGRO = new Color(0, 0, 0);
-    private final Color GRIS_FONDO = new Color(245, 247, 250);
+
+    private List<Trueque> listaTrueques = new ArrayList<>();
+    private boolean modoOscuroActivado = false;
+    
+    private List<JPanel> panelesConmutables = new ArrayList<>();
+    private List<JLabel> etiquetasTextoPerfil = new ArrayList<>();
+    
+    private JPanel panelCuerpoPerfil;
+    private JLabel lblNombre, lblCorreo, lblCarrera, lblEdad;
+    private JComponent tarjeta1, tarjeta2, tarjeta3;
+
+    private JToggleButton btnModoOscuro;
+    private JPanel panelCabecera; 
 
     public VentanaPrincipal(Usuario usuario) {
         this.usuarioActual = usuario;
@@ -39,7 +55,7 @@ public class VentanaPrincipal extends JFrame {
         }
         
         setTitle("Sistema de Gestión de Puntos DUNAB - Plataforma Principal");
-        setSize(1000, 700);
+        setSize(1000, 720);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -51,6 +67,7 @@ public class VentanaPrincipal extends JFrame {
         pestañas.addTab("Encuentros (Inscripción)", crearPanelEncuentros());
         pestañas.addTab("Administrar Encuentros (CRUD)", crearPanelAdminEncuentros());
         pestañas.addTab("Tienda", crearPanelTienda());
+        pestañas.addTab("Trueque DUNAB", crearPanelTrueques());
         pestañas.addTab("Clan & Comunidad", crearPanelClan());
         pestañas.addTab("Ranking", crearPanelRanking());
         pestañas.addTab("Minijuegos", crearPanelMinijuegos());
@@ -64,46 +81,56 @@ public class VentanaPrincipal extends JFrame {
 
     private JPanel crearPanelPerfil() {
         JPanel panelPerfil = new JPanel(new BorderLayout());
-        panelPerfil.setBackground(GRIS_FONDO);
+        panelPerfil.setBackground(Color.WHITE);
+        panelesConmutables.add(panelPerfil);
 
-        JPanel panelCabecera = new JPanel(new BorderLayout());
+        panelCabecera = new JPanel(new BorderLayout());
         panelCabecera.setBackground(AZUL_UNAB_TEC);
-        panelCabecera.setBorder(new EmptyBorder(10, 25, 10, 25));
+        panelCabecera.setBorder(new EmptyBorder(15, 25, 15, 25));
 
         JPanel panelIzquierdoCabecera = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
         panelIzquierdoCabecera.setOpaque(false);
-
-        try {
-            java.net.URL urlLogo = getClass().getResource("/proyectoed/imágenes/Logo UNAB.png");
-            if (urlLogo != null) {
-                ImageIcon logoOriginal = new ImageIcon(urlLogo);
-                Image logoEscalado = logoOriginal.getImage().getScaledInstance(110, 38, Image.SCALE_SMOOTH);
-                JLabel lblLogoUnab = new JLabel(new ImageIcon(logoEscalado));
-                panelIzquierdoCabecera.add(lblLogoUnab);
-            }
-        } catch (Exception e) {
-            System.out.println("No se pudo cargar el logo en la cabecera: " + e.getMessage());
-        }
 
         JLabel lblTitulo = new JLabel("Tu Perfil DUNAB");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 22));
         lblTitulo.setForeground(BLANCO);
         panelIzquierdoCabecera.add(lblTitulo);
         
+        btnModoOscuro = new JToggleButton("Modo Oscuro 🌙");
+        btnModoOscuro.setFont(new Font("Arial", Font.BOLD, 12));
+        btnModoOscuro.addActionListener(e -> btnModoOscuroActionPerformed(e));
+        panelIzquierdoCabecera.add(btnModoOscuro);
+        
         panelCabecera.add(panelIzquierdoCabecera, BorderLayout.WEST);
 
-        lblRachaVisual = new JLabel("🔥 Racha: " + usuarioActual.getRachaDias() + " días ", JLabel.RIGHT);
+        JPanel panelDerechoCabecera = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 5));
+        panelDerechoCabecera.setOpaque(false);
+
+        lblRachaVisual = new JLabel("🔥 Racha: " + usuarioActual.getRachaDias() + " días ");
         lblRachaVisual.setFont(new Font("Arial", Font.BOLD, 16));
         lblRachaVisual.setForeground(new Color(255, 204, 0)); 
-        panelCabecera.add(lblRachaVisual, BorderLayout.EAST);
+        panelDerechoCabecera.add(lblRachaVisual);
+
+        JLabel lblLogoUnab = new JLabel();
+        try {
+            java.net.URL urlLogo = getClass().getResource("/proyectoed/imágenes/Logo UNAB.png");
+            if (urlLogo != null) {
+                ImageIcon imgLogo = new ImageIcon(urlLogo);
+                Image escaladaLogo = imgLogo.getImage().getScaledInstance(140, 50, Image.SCALE_SMOOTH);
+                lblLogoUnab.setIcon(new ImageIcon(escaladaLogo));
+            }
+        } catch(Exception e) {}
+        panelDerechoCabecera.add(lblLogoUnab);
+        
+        panelCabecera.add(panelDerechoCabecera, BorderLayout.EAST);
 
         panelPerfil.add(panelCabecera, BorderLayout.NORTH);
 
-        JPanel panelCuerpo = new JPanel(new GridBagLayout());
-        panelCuerpo.setBackground(BLANCO);
-        panelCuerpo.setBorder(BorderFactory.createCompoundBorder(
-                new EmptyBorder(30, 40, 30, 40),
-                BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true)
+        panelCuerpoPerfil = new JPanel(new GridBagLayout());
+        panelCuerpoPerfil.setBackground(Color.WHITE);
+        panelCuerpoPerfil.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
+                new EmptyBorder(30, 40, 30, 40)
         ));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -112,63 +139,69 @@ public class VentanaPrincipal extends JFrame {
 
         gbc.gridx = 0; gbc.gridy = 0;
         gbc.gridheight = 4; 
-        gbc.anchor = GridBagConstraints.CENTER;
         
         JLabel lblFotoPerfil = new JLabel();
         lblFotoPerfil.setPreferredSize(new Dimension(150, 150));
         lblFotoPerfil.setBorder(BorderFactory.createLineBorder(AZUL_UNAB_TEC, 3, true));
-        
+        lblFotoPerfil.setHorizontalAlignment(JLabel.CENTER);
         try {
-            java.net.URL urlFoto = getClass().getResource("/proyectoed/imágenes/sonic.jpg");
-            if (urlFoto != null) {
-                ImageIcon fotoOriginal = new ImageIcon(urlFoto);
-                Image imgEscalada = fotoOriginal.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-                lblFotoPerfil.setIcon(new ImageIcon(imgEscalada));
+            java.net.URL urlSonic = getClass().getResource("/proyectoed/imágenes/sonic.jpg");
+            if (urlSonic != null) {
+                ImageIcon imgSonic = new ImageIcon(urlSonic);
+                Image escalada = imgSonic.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                lblFotoPerfil.setIcon(new ImageIcon(escalada));
             } else {
-                lblFotoPerfil.setText("sonic.jpg");
-                lblFotoPerfil.setFont(new Font("Arial", Font.BOLD, 14));
-                lblFotoPerfil.setHorizontalAlignment(JLabel.CENTER);
-                lblFotoPerfil.setBackground(new Color(230, 240, 255));
-                lblFotoPerfil.setOpaque(true);
+                lblFotoPerfil.setText("🦔 Sonic.jpg");
             }
-        } catch (Exception e) {
-            System.out.println("Error al cargar sonic.jpg: " + e.getMessage());
+        } catch(Exception e) {
+            lblFotoPerfil.setText("FOTO PERFIL");
         }
-        panelCuerpo.add(lblFotoPerfil, gbc);
+        panelCuerpoPerfil.add(lblFotoPerfil, gbc);
 
         gbc.gridheight = 1; 
         gbc.weightx = 1.0;
 
         gbc.gridx = 1; gbc.gridy = 0;
-        JLabel lblNombre = new JLabel(usuarioActual.getNombres().toUpperCase());
+        lblNombre = new JLabel(usuarioActual.getNombres().toUpperCase());
         lblNombre.setFont(new Font("Arial", Font.BOLD, 24));
         lblNombre.setForeground(AZUL_UNAB_TEC);
-        panelCuerpo.add(lblNombre, gbc);
+        panelCuerpoPerfil.add(lblNombre, gbc);
 
         gbc.gridx = 1; gbc.gridy = 1;
-        JLabel lblCorreo = new JLabel("📧 Correo: " + usuarioActual.getCorreoUnab());
-        lblCorreo.setFont(new Font("Arial", Font.PLAIN, 15));
-        panelCuerpo.add(lblCorreo, gbc);
+        lblCorreo = new JLabel("📧 Correo: " + usuarioActual.getCorreoUnab());
+        lblCorreo.setFont(new Font("Arial", Font.BOLD, 15));
+        lblCorreo.setForeground(NEGRO);
+        etiquetasTextoPerfil.add(lblCorreo);
+        panelCuerpoPerfil.add(lblCorreo, gbc);
 
         gbc.gridx = 1; gbc.gridy = 2;
-        JLabel lblCarrera = new JLabel("🎓 Programa: " + usuarioActual.getCarrera());
-        lblCarrera.setFont(new Font("Arial", Font.PLAIN, 15));
-        panelCuerpo.add(lblCarrera, gbc);
+        lblCarrera = new JLabel("🎓 Programa: " + usuarioActual.getCarrera());
+        lblCarrera.setFont(new Font("Arial", Font.BOLD, 15));
+        lblCarrera.setForeground(NEGRO);
+        etiquetasTextoPerfil.add(lblCarrera);
+        panelCuerpoPerfil.add(lblCarrera, gbc);
 
         gbc.gridx = 1; gbc.gridy = 3;
-        JLabel lblEdad = new JLabel("🎂 Edad: " + usuarioActual.getEdad() + " años");
-        lblEdad.setFont(new Font("Arial", Font.PLAIN, 15));
-        panelCuerpo.add(lblEdad, gbc);
+        lblEdad = new JLabel("🎂 Edad: " + usuarioActual.getEdad() + " años");
+        lblEdad.setFont(new Font("Arial", Font.BOLD, 15));
+        lblEdad.setForeground(NEGRO);
+        etiquetasTextoPerfil.add(lblEdad);
+        panelCuerpoPerfil.add(lblEdad, gbc);
 
-        panelPerfil.add(panelCuerpo, BorderLayout.CENTER);
+        panelPerfil.add(panelCuerpoPerfil, BorderLayout.CENTER);
 
         JPanel panelEstadisticas = new JPanel(new GridLayout(1, 3, 15, 0));
-        panelEstadisticas.setBackground(GRIS_FONDO);
+        panelEstadisticas.setBackground(Color.WHITE);
+        panelesConmutables.add(panelEstadisticas);
         panelEstadisticas.setBorder(new EmptyBorder(10, 40, 30, 40));
 
-        panelEstadisticas.add(crearTarjetaMetrica("Comunidad", "67 Amigos Activos", "👥"));
-        panelEstadisticas.add(crearTarjetaMetrica("Rango Académico", "Estudiante Regular", "🛡️"));
-        panelEstadisticas.add(crearTarjetaMetrica("Clan Oficial", "Ing. de la Recocha", "⚔️"));
+        tarjeta1 = crearTarjetaMetrica("Comunidad", "67 Amigos Activos", "👥");
+        tarjeta2 = crearTarjetaMetrica("Rango Académico", "Estudiante Regular", "🛡️");
+        tarjeta3 = crearTarjetaMetrica("Clan Oficial", "Ing. de la Recocha", "⚔️");
+
+        panelEstadisticas.add(tarjeta1);
+        panelEstadisticas.add(tarjeta2);
+        panelEstadisticas.add(tarjeta3);
 
         panelPerfil.add(panelEstadisticas, BorderLayout.SOUTH);
 
@@ -177,7 +210,8 @@ public class VentanaPrincipal extends JFrame {
 
     private JPanel crearPanelBilletera() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(GRIS_FONDO);
+        panel.setBackground(Color.WHITE);
+        panelesConmutables.add(panel);
 
         JPanel panelTop = new JPanel(new GridLayout(1, 2));
         
@@ -198,7 +232,7 @@ public class VentanaPrincipal extends JFrame {
         panelTop.add(panelSaldo);
 
         JPanel panelCrudDunab = new JPanel(new GridLayout(3, 2, 8, 8));
-        panelCrudDunab.setBackground(BLANCO);
+        panelCrudDunab.setBackground(Color.WHITE);
         panelCrudDunab.setBorder(BorderFactory.createTitledBorder("Módulo Administrativo DUNAB (CRUD)"));
         
         txtConceptoBono = new JTextField();
@@ -229,7 +263,7 @@ public class VentanaPrincipal extends JFrame {
                 txtMontoBono.setText("");
                 JOptionPane.showMessageDialog(this, "Saldo modificado correctamente en la base de datos DUNAB.");
             } catch(Exception ex) {
-                JOptionPane.showMessageDialog(this, "Campos inválidos. Introduce un concepto válido y un monto numérico.", "Error CRUD", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Campos inválidos.", "Error CRUD", JOptionPane.ERROR_MESSAGE);
             }
         });
         panelTop.add(panelCrudDunab);
@@ -238,7 +272,8 @@ public class VentanaPrincipal extends JFrame {
 
         JPanel panelTabla = new JPanel(new BorderLayout());
         panelTabla.setBorder(new EmptyBorder(15, 20, 20, 20));
-        panelTabla.setBackground(GRIS_FONDO);
+        panelTabla.setBackground(Color.WHITE);
+        panelesConmutables.add(panelTabla);
 
         JLabel lblHist = new JLabel("Historial del Estado de Cuenta (Transacciones)", JLabel.LEFT);
         lblHist.setFont(new Font("Arial", Font.BOLD, 15));
@@ -258,11 +293,12 @@ public class VentanaPrincipal extends JFrame {
 
     private JPanel crearPanelEncuentros() {
         JPanel panel = new JPanel(new GridLayout(2, 1, 10, 15));
-        panel.setBackground(GRIS_FONDO);
+        panel.setBackground(Color.WHITE);
+        panelesConmutables.add(panel);
         panel.setBorder(new EmptyBorder(15, 20, 15, 20));
 
         JPanel panelDisp = new JPanel(new BorderLayout());
-        panelDisp.setBackground(GRIS_FONDO);
+        panelDisp.setOpaque(false);
         JLabel lblD = new JLabel("Encuentros Disponibles en el Ecosistema UNAB", JLabel.LEFT);
         lblD.setFont(new Font("Arial", Font.BOLD, 14));
         panelDisp.add(lblD, BorderLayout.NORTH);
@@ -297,7 +333,7 @@ public class VentanaPrincipal extends JFrame {
                     lblSaldoBilletera.setText(DunabCRUD.saldoDunab + " DUNAB");
                     actualizarTablaInscritos();
                     actualizarTablaHistorial();
-                    JOptionPane.showMessageDialog(this, "¡Inscripción confirmada! Se han abonado +250 DUNAB a tu billetera.");
+                    JOptionPane.showMessageDialog(this, "¡Inscripción confirmada! Se han abonado +250 DUNAB.");
                 } else {
                     JOptionPane.showMessageDialog(this, "Ya te encuentras registrado en esta actividad.", "Registro Duplicado", JOptionPane.WARNING_MESSAGE);
                 }
@@ -308,7 +344,7 @@ public class VentanaPrincipal extends JFrame {
         panelDisp.add(btnInscribir, BorderLayout.SOUTH);
 
         JPanel panelInsc = new JPanel(new BorderLayout());
-        panelInsc.setBackground(GRIS_FONDO);
+        panelInsc.setOpaque(false);
         JLabel lblI = new JLabel("Mis Encuentros Confirmados (Mi Agenda Personal)", JLabel.LEFT);
         lblI.setFont(new Font("Arial", Font.BOLD, 14));
         panelInsc.add(lblI, BorderLayout.NORTH);
@@ -325,11 +361,12 @@ public class VentanaPrincipal extends JFrame {
 
     private JPanel crearPanelAdminEncuentros() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(GRIS_FONDO);
+        panel.setBackground(Color.WHITE);
+        panelesConmutables.add(panel);
         panel.setBorder(new EmptyBorder(15, 20, 15, 20));
 
         JPanel panelForm = new JPanel(new GridLayout(5, 2, 8, 8));
-        panelForm.setBackground(BLANCO);
+        panelForm.setBackground(Color.WHITE);
         panelForm.setBorder(BorderFactory.createTitledBorder("Registrar / Modificar Encuentros"));
 
         txtActividad = new JTextField();
@@ -342,8 +379,8 @@ public class VentanaPrincipal extends JFrame {
         panelForm.add(new JLabel("  Fecha (AAAA-MM-DD):")); panelForm.add(txtFecha);
         panelForm.add(new JLabel("  Hora (HH:MM):")); panelForm.add(txtHora);
 
-        JPanel panelBotones = new JPanel(new GridLayout(1, 3, 10, 0));
-        panelBotones.setBackground(GRIS_FONDO);
+        JPanel panelBotones = new JPanel(new GridLayout(1, 2, 10, 0));
+        panelBotones.setOpaque(false);
         
         JButton btnGuardar = new JButton("Crear/Guardar");
         btnGuardar.setBackground(AZUL_UNAB_TEC); btnGuardar.setForeground(BLANCO);
@@ -397,7 +434,7 @@ public class VentanaPrincipal extends JFrame {
                 enc.setActividad(act); enc.setDescripcion(desc); enc.setFecha(fec); enc.setHora(hor);
                 JOptionPane.showMessageDialog(this, "Encuentro modificado con éxito.");
             } else {
-                EncuentroCRUD.encuentros.add(new EncounterAdapter(act, desc, fec, hor));
+                EncuentroCRUD.encuentros.add(new Encuentro(act, desc, fec, hor));
                 JOptionPane.showMessageDialog(this, "Nuevo encuentro registrado.");
             }
             
@@ -415,9 +452,9 @@ public class VentanaPrincipal extends JFrame {
                 EncuentroCRUD.guardarEncuentros();
                 refrescarAdminTabla.run();
                 txtActividad.setText(""); txtDescripcion.setText(""); txtFecha.setText(""); txtHora.setText("");
-                JOptionPane.showMessageDialog(this, "Encuentro eliminado del archivo serializado.");
+                JOptionPane.showMessageDialog(this, "Encuentro eliminado.");
             } else {
-                JOptionPane.showMessageDialog(this, "Seleccione un registro de la tabla.");
+                JOptionPane.showMessageDialog(this, "Seleccione un registro.");
             }
         });
 
@@ -434,7 +471,8 @@ public class VentanaPrincipal extends JFrame {
 
     private JPanel crearPanelTienda() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(GRIS_FONDO);
+        panel.setBackground(Color.WHITE);
+        panelesConmutables.add(panel);
         panel.setBorder(new EmptyBorder(15, 20, 15, 20));
 
         JLabel lblT = new JLabel("Tienda de Beneficios y Canjes Universitarios", JLabel.LEFT);
@@ -465,15 +503,15 @@ public class VentanaPrincipal extends JFrame {
                         lblSaldoBilletera.setText(DunabCRUD.saldoDunab + " DUNAB");
                         actualizarTablaTienda();
                         actualizarTablaHistorial();
-                        JOptionPane.showMessageDialog(this, "¡Canje Procesado! Descarga tu cupón digital en la oficina de Bienestar.");
+                        JOptionPane.showMessageDialog(this, "¡Canje Procesado!");
                     } else {
-                        JOptionPane.showMessageDialog(this, "Este artículo se encuentra agotado temporalmente.", "Sin Stock", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(this, "Artículo agotado.", "Sin Stock", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
-                    JOptionPane.showMessageDialog(this, "No posees suficientes puntos DUNAB para este artículo.", "Saldo Insuficiente", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Saldo insuficiente.", "Saldo Insuficiente", JOptionPane.WARNING_MESSAGE);
                 }
             } else {
-                JOptionPane.showMessageDialog(this, "Seleccione un producto del catálogo para redimir.");
+                JOptionPane.showMessageDialog(this, "Seleccione un producto.");
             }
         });
         panel.add(btnComprar, BorderLayout.SOUTH);
@@ -481,13 +519,108 @@ public class VentanaPrincipal extends JFrame {
         return panel;
     }
 
+    private JPanel crearPanelTrueques() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(Color.WHITE);
+        panelesConmutables.add(panel);
+        panel.setBorder(new EmptyBorder(15, 20, 15, 20));
+
+        JPanel panelForm = new JPanel(new GridLayout(3, 2, 8, 8));
+        panelForm.setBackground(Color.WHITE);
+        panelForm.setBorder(BorderFactory.createTitledBorder("Proponer un nuevo Intercambio / Trueque"));
+
+        txtOfrecidoTrueque = new JTextField();
+        txtSolicitadoTrueque = new JTextField();
+        JButton btnPublicarTrueque = new JButton("Publicar Oferta");
+        btnPublicarTrueque.setBackground(AZUL_UNAB_TEC);
+        btnPublicarTrueque.setForeground(BLANCO);
+
+        panelForm.add(new JLabel("  Qué ofreces (Artículo/Servicio):")); panelForm.add(txtOfrecidoTrueque);
+        panelForm.add(new JLabel("  Qué buscas a cambio:")); panelForm.add(txtSolicitadoTrueque);
+        panelForm.add(new JLabel("")); panelForm.add(btnPublicarTrueque);
+
+        JPanel panelTabla = new JPanel(new BorderLayout(5, 5));
+        panelTabla.setOpaque(false);
+        
+        JLabel lblT = new JLabel("Tablón de Trueques de la Comunidad Universitaria DUNAB", JLabel.LEFT);
+        lblT.setFont(new Font("Arial", Font.BOLD, 14));
+        panelTabla.add(lblT, BorderLayout.NORTH);
+
+        String[] columnas = {"ID", "Estudiante Origen", "Ofrece", "Busca", "Estado", "Estudiante Destino"};
+        modeloTrueques = new DefaultTableModel(columnas, 0);
+        JTable tablaTrueques = new JTable(modeloTrueques);
+        panelTabla.add(new JScrollPane(tablaTrueques), BorderLayout.CENTER);
+
+        JButton btnAceptarTrueque = new JButton("Aceptar Intercambio Seleccionado");
+        btnAceptarTrueque.setBackground(new Color(40, 167, 69));
+        btnAceptarTrueque.setForeground(BLANCO);
+        panelTabla.add(btnAceptarTrueque, BorderLayout.SOUTH);
+
+        panel.add(panelForm, BorderLayout.NORTH);
+        panel.add(panelTabla, BorderLayout.CENTER);
+
+        if(listaTrueques.isEmpty()) {
+            listaTrueques.add(new Trueque("TRQ1", "Carlos Mendoza", "Libro Cálculo Stewart", "Puntos DUNAB"));
+            listaTrueques.add(new Trueque("TRQ2", "Laura Gómez", "Calculadora Casio", "Saco Universitario"));
+        }
+        actualizarTablaTrueques();
+
+        btnPublicarTrueque.addActionListener(e -> {
+            String ofr = txtOfrecidoTrueque.getText().trim();
+            String sol = txtSolicitadoTrueque.getText().trim();
+            if (ofr.isEmpty() || sol.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Por favor rellena ambos campos.", "Campos vacíos", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String id = "TRQ" + (listaTrueques.size() + 1);
+            listaTrueques.add(new Trueque(id, usuarioActual.getNombres(), ofr, sol));
+            actualizarTablaTrueques();
+            txtOfrecidoTrueque.setText("");
+            txtSolicitadoTrueque.setText("");
+            JOptionPane.showMessageDialog(this, "Tu oferta ha sido publicada.");
+        });
+
+        btnAceptarTrueque.addActionListener(e -> {
+            int fila = tablaTrueques.getSelectedRow();
+            if (fila >= 0) {
+                String id = (String) modeloTrueques.getValueAt(fila, 0);
+                String origen = (String) modeloTrueques.getValueAt(fila, 1);
+                String estado = (String) modeloTrueques.getValueAt(fila, 4);
+
+                if (origen.equals(usuarioActual.getNombres())) {
+                    JOptionPane.showMessageDialog(this, "No puedes aceptar tu propio trueque.", "Error", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                if (!estado.equals("Pendiente")) {
+                    JOptionPane.showMessageDialog(this, "Este trueque ya fue procesado.", "No disponible", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                for (Trueque t : listaTrueques) {
+                    if (t.getIdTrueque().equals(id)) {
+                        t.setEstudianteDestino(usuarioActual.getNombres());
+                        t.setEstado("Aceptado");
+                        break;
+                    }
+                }
+                actualizarTablaTrueques();
+                JOptionPane.showMessageDialog(this, "¡Intercambio aceptado!");
+            } else {
+                JOptionPane.showMessageDialog(this, "Selecciona una oferta de trueque.");
+            }
+        });
+
+        return panel;
+    }
+
     private JPanel crearPanelClan() {
         JPanel panel = new JPanel(new GridLayout(1, 2, 15, 0));
-        panel.setBackground(GRIS_FONDO);
+        panel.setBackground(Color.WHITE);
+        panelesConmutables.add(panel);
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         JPanel panelIzq = new JPanel(new BorderLayout());
-        panelIzq.setBackground(BLANCO);
+        panelIzq.setBackground(Color.WHITE);
         panelIzq.setBorder(BorderFactory.createLineBorder(new Color(220, 224, 230), 1));
         JLabel lblC = new JLabel("🛡️ Clan de Estudio Oficial: Ing. de la Recocha", JLabel.CENTER);
         lblC.setFont(new Font("Arial", Font.BOLD, 14));
@@ -504,7 +637,7 @@ public class VentanaPrincipal extends JFrame {
         panelIzq.add(new JScrollPane(listaClan), BorderLayout.CENTER);
 
         JPanel panelDer = new JPanel(new BorderLayout());
-        panelDer.setBackground(BLANCO);
+        panelDer.setBackground(Color.WHITE);
         panelDer.setBorder(BorderFactory.createLineBorder(new Color(220, 224, 230), 1));
         JLabel lblA = new JLabel("👥 Mis Amigos de la Facultad (Comunidad)", JLabel.CENTER);
         lblA.setFont(new Font("Arial", Font.BOLD, 14));
@@ -512,7 +645,7 @@ public class VentanaPrincipal extends JFrame {
 
         DefaultListModel<String> modeloAmigos = new DefaultListModel<>();
         for(int i = 1; i <= 8; i++) {
-            modeloAmigos.addElement("Estudiante de Ingeniería Metropolitano #" + i + " - Conectado hace poco");
+            modeloAmigos.addElement("Estudiante de Ingeniería #" + i + " - Activo");
         }
         JList<String> listaAmigos = new JList<>(modeloAmigos);
         panelDer.add(new JScrollPane(listaAmigos), BorderLayout.CENTER);
@@ -524,7 +657,8 @@ public class VentanaPrincipal extends JFrame {
 
     private JPanel crearPanelRanking() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(GRIS_FONDO);
+        panel.setBackground(Color.WHITE);
+        panelesConmutables.add(panel);
         panel.setBorder(new EmptyBorder(15, 20, 15, 20));
 
         JLabel lblT = new JLabel("🏆 Top Clasificación General de la Facultad de Ingeniería", JLabel.LEFT);
@@ -548,7 +682,8 @@ public class VentanaPrincipal extends JFrame {
 
     private JPanel crearPanelMinijuegos() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(BLANCO);
+        panel.setBackground(Color.WHITE);
+        panelesConmutables.add(panel);
         panel.setBorder(new EmptyBorder(30, 40, 30, 40));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -573,7 +708,7 @@ public class VentanaPrincipal extends JFrame {
                 actualizarTablaHistorial();
                 JOptionPane.showMessageDialog(this, "¡Correcto! Has sumado 150 DUNAB.");
             } else if (resp != null) {
-                JOptionPane.showMessageDialog(this, "Incorrecto. Repasa tus apuntes de árboles de decisión.", "Fallo", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Incorrecto.", "Fallo", JOptionPane.ERROR_MESSAGE);
             }
         });
         panel.add(btnTrivia, gbc);
@@ -589,9 +724,9 @@ public class VentanaPrincipal extends JFrame {
                 DunabCRUD.historialTransacciones.add(new Transaccion("Encontraste a Banú 🐾", 100, "2026-05-26", "INGRESO"));
                 lblSaldoBilletera.setText(DunabCRUD.saldoDunab + " DUNAB");
                 actualizarTablaHistorial();
-                JOptionPane.showMessageDialog(this, "¡Lo encontraste jugando baloncesto! Ganaste 100 DUNAB.");
+                JOptionPane.showMessageDialog(this, "¡Lo encontraste! Ganaste 100 DUNAB.");
             } else if (opcion >= 0) {
-                JOptionPane.showMessageDialog(this, "El aula está vacía. ¡Sigue buscando!");
+                JOptionPane.showMessageDialog(this, "El aula está vacía.");
             }
         });
         panel.add(btnBanu, gbc);
@@ -599,10 +734,44 @@ public class VentanaPrincipal extends JFrame {
         return panel;
     }
 
+    private void btnModoOscuroActionPerformed(java.awt.event.ActionEvent evt) {
+        modoOscuroActivado = !modoOscuroActivado;
+        aplicarColoresSelectivos(modoOscuroActivado);
+        
+        if (modoOscuroActivado) {
+            btnModoOscuro.setText("Modo Claro ☀️");
+        } else {
+            btnModoOscuro.setText("Modo Oscuro 🌙");
+        }
+    }
+
+    private void aplicarColoresSelectivos(boolean oscuro) {
+        Color colorFondo = oscuro ? new Color(33, 33, 33) : Color.WHITE;
+        Color colorParches = oscuro ? new Color(50, 50, 50) : Color.WHITE;
+        Color colorTexto = oscuro ? new Color(240, 240, 240) : Color.BLACK;
+
+        for (JPanel panel : panelesConmutables) {
+            panel.setBackground(colorFondo);
+        }
+
+        panelCuerpoPerfil.setBackground(colorFondo);
+        for (JLabel etiqueta : etiquetasTextoPerfil) {
+            etiqueta.setForeground(colorTexto);
+        }
+        
+        tarjeta1.setBackground(colorParches);
+        tarjeta2.setBackground(colorParches);
+        tarjeta3.setBackground(colorParches);
+        
+        this.repaint();
+    }
+
     private void actualizarTablaHistorial() {
-        modeloHistorial.setRowCount(0);
-        for (Transaccion t : DunabCRUD.historialTransacciones) {
-            modeloHistorial.addRow(new Object[]{t.getConcepto(), t.getCantidad() + " DUNAB", t.getFecha(), t.getTipo()});
+        if(modeloHistorial != null) {
+            modeloHistorial.setRowCount(0);
+            for (Transaccion t : DunabCRUD.historialTransacciones) {
+                modeloHistorial.addRow(new Object[]{t.getConcepto(), t.getCantidad() + " DUNAB", t.getFecha(), t.getTipo()});
+            }
         }
     }
 
@@ -617,47 +786,153 @@ public class VentanaPrincipal extends JFrame {
     }
 
     private void actualizarTablaInscritos() {
-        modeloInscritos.setRowCount(0);
-        for (Encuentro e : DunabCRUD.encuentrosInscritos) {
-            modeloInscritos.addRow(new Object[]{e.getActividad(), e.getFecha(), e.getHora()});
+        if(modeloInscritos != null) {
+            modeloInscritos.setRowCount(0);
+            for (Encuentro e : DunabCRUD.encuentrosInscritos) {
+                modeloInscritos.addRow(new Object[]{e.getActividad(), e.getFecha(), e.getHora()});
+            }
         }
     }
 
     private void actualizarTablaTienda() {
-        modeloTienda.setRowCount(0);
-        for (Producto p : DunabCRUD.inventarioTienda) {
-            modeloTienda.addRow(new Object[]{p.getNombre(), p.getCosto() + " DUNAB", p.getCategoria(), p.getStock()});
+        if(modeloTienda != null) {
+            modeloTienda.setRowCount(0);
+            for (Producto p : DunabCRUD.inventarioTienda) {
+                modeloTienda.addRow(new Object[]{p.getNombre(), p.getCosto() + " DUNAB", p.getCategoria(), p.getStock()});
+            }
+        }
+    }
+
+    private void actualizarTablaTrueques() {
+        if (modeloTrueques != null) {
+            modeloTrueques.setRowCount(0);
+            for (Trueque t : listaTrueques) {
+                modeloTrueques.addRow(new Object[]{t.getIdTrueque(), t.getEstudianteOrigen(), t.getArticuloOfrecido(), t.getArticuloSolicitado(), t.getEstado(), t.getEstudianteDestino() != null ? t.getEstudianteDestino() : "---"});
+            }
         }
     }
 
     private JComponent crearTarjetaMetrica(String titulo, String valor, String icono) {
         JPanel tarjeta = new JPanel(new BorderLayout(5, 5));
-        tarjeta.setBackground(BLANCO);
+        tarjeta.setBackground(Color.WHITE);
         tarjeta.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(225, 229, 235), 1),
+                BorderFactory.createLineBorder(new Color(215, 219, 225), 1),
                 new EmptyBorder(12, 15, 12, 15)
         ));
         JLabel lblIcono = new JLabel(icono);
         lblIcono.setFont(new Font("Arial", Font.PLAIN, 24));
         tarjeta.add(lblIcono, BorderLayout.WEST);
+        
         JPanel panelTextos = new JPanel(new GridLayout(2, 1));
-        panelTextos.setBackground(BLANCO);
+        panelTextos.setOpaque(false);
+        
         JLabel lblT = new JLabel(titulo);
         lblT.setFont(new Font("Arial", Font.BOLD, 12));
         lblT.setForeground(Color.GRAY);
+        
         JLabel lblV = new JLabel(valor);
         lblV.setFont(new Font("Arial", Font.BOLD, 14));
         lblV.setForeground(NEGRO);
+        
         panelTextos.add(lblT);
         panelTextos.add(lblV);
         tarjeta.add(panelTextos, BorderLayout.CENTER);
+        
+        etiquetasTextoPerfil.add(lblV);
+        
         return tarjeta;
     }
 
-    private static class EncounterAdapter extends Encuentro {
-        public EncounterAdapter(String a, String d, String f, String h) {
-            super(a, d, f, h);
+    public static class Usuario {
+        private String nombres, correoUnab, carrera, contraseña;
+        private int edad, rachaDias = 3;
+        public Usuario(String n, String co, String ca, String con, int e) {
+            this.nombres = n; this.correoUnab = co; this.carrera = ca; this.contraseña = con; this.edad = e;
         }
+        public String getNombres() { return nombres; }
+        public String getCorreoUnab() { return correoUnab; }
+        public String getCarrera() { return carrera; }
+        public int getEdad() { return edad; }
+        public int getRachaDias() { return rachaDias; }
+    }
+
+    public static class Transaccion {
+        private String concepto, fecha, tipo; int cantidad;
+        public Transaccion(String c, int can, String f, String t) {
+            this.concepto = c; this.cantidad = can; this.fecha = f; this.tipo = t;
+        }
+        public String getConcepto() { return concepto; }
+        public int getCantidad() { return cantidad; }
+        public String getFecha() { return fecha; }
+        public String getTipo() { return tipo; }
+    }
+
+    public static class Encuentro {
+        private String actividad, descripcion, fecha, hora;
+        public Encuentro(String a, String d, String f, String h) {
+            this.actividad = a; this.descripcion = d; this.fecha = f; this.hora = h;
+        }
+        public String getActividad() { return actividad; }
+        public void setActividad(String a) { this.actividad = a; }
+        public String getDescripcion() { return descripcion; }
+        public String getFecha() { return fecha; }
+        public void setFecha(String f) { this.fecha = f; }
+        public String getHora() { return hora; }
+        public void setHora(String h) { this.hora = h; }
+        public void setDescripcion(String desc) { this.descripcion = desc; }
+    }
+
+    public static class Producto {
+        private String nombre, categoria; int costo, stock;
+        public Producto(String n, int c, String cat, int s) {
+            this.nombre = n; this.costo = c; this.categoria = cat; this.stock = s;
+        }
+        public String getNombre() { return nombre; }
+        public int getCosto() { return costo; }
+        public String getCategoria() { return categoria; }
+        public int getStock() { return stock; }
+        public void setStock(int s) { this.stock = s; }
+    }
+
+    public static class Trueque {
+        private String idTrueque, estudianteOrigen, articuloOfrecido, articuloSolicitado, estado, estudianteDestino;
+        public Trueque(String id, String ori, String ofr, String sol) {
+            this.idTrueque = id; this.estudianteOrigen = ori; this.articuloOfrecido = ofr; this.articuloSolicitado = sol;
+            this.estado = "Pendiente"; this.estudianteDestino = null;
+        }
+        public String getIdTrueque() { return idTrueque; }
+        public String getEstudianteOrigen() { return estudianteOrigen; }
+        public String getArticuloOfrecido() { return articuloOfrecido; }
+        public String getArticuloSolicitado() { return articuloSolicitado; }
+        public String getEstado() { return estado; }
+        public void setEstado(String e) { this.estado = e; }
+        public String getEstudianteDestino() { return estudianteDestino; }
+        public void setEstudianteDestino(String ed) { this.estudianteDestino = ed; }
+    }
+
+    public static class DunabCRUD {
+        public static int saldoDunab = 1250;
+        public static List<Transaccion> historialTransacciones = new ArrayList<>();
+        public static List<Encuentro> encuentrosInscritos = new ArrayList<>();
+        public static List<Producto> inventarioTienda = new ArrayList<>();
+        public static void inicializarDatos() {
+            if(historialTransacciones.isEmpty()) {
+                historialTransacciones.add(new Transaccion("Bono Bienvenida", 500, "2026-05-20", "INGRESO"));
+                historialTransacciones.add(new Transaccion("Taller de Git/GitHub", 500, "2026-05-22", "INGRESO"));
+                historialTransacciones.add(new Transaccion("Fotocopias Biblioteca", 250, "2026-05-24", "GASTO"));
+            }
+            if(inventarioTienda.isEmpty()) {
+                inventarioTienda.add(new Producto("Almuerzo Completo Cafetería", 600, "Alimentación", 15));
+                inventarioTienda.add(new Producto("Termo Oficial UNAB", 800, "Accesorios", 8));
+                inventarioTienda.add(new Producto("Gorra Plana DUNAB", 1000, "Moda", 4));
+            }
+        }
+    }
+
+    public static class EncuentroCRUD {
+        public static List<Encuentro> encuentros = new ArrayList<>();
+        public static List<Encuentro> cargarEncuentros() { return new ArrayList<>(); }
+        public static void guardarEncuentros() { }
     }
 
     public static void main(String args[]) {

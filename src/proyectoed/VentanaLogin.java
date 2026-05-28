@@ -4,6 +4,8 @@ import java.awt.*;
 import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import proyectoed.VentanaPrincipal.DunabCRUD;
+import proyectoed.VentanaPrincipal.Transaccion;
 
 /**
  * @authors Tomás Reyes, Juan Mateus, Santiago Rey, David Barbosa
@@ -27,7 +29,8 @@ public class VentanaLogin extends JFrame {
         setResizable(false);
 
         if (usuariosRegistrados.isEmpty()) {
-            usuariosRegistrados.add(new Usuario("Estudiante UNAB", "unab", "Sistemas", "123", 19));
+            String fechaAyer = java.time.LocalDate.now().minusDays(1).toString();
+            usuariosRegistrados.add(new Usuario("Estudiante UNAB", "unab", "Ingeniería de Sistemas", "123", 19, fechaAyer));
         }
 
         try {
@@ -171,9 +174,17 @@ public class VentanaLogin extends JFrame {
             JOptionPane.showMessageDialog(this, "¡Bienvenido al Sistema DUNAB!");
             this.dispose(); 
             
-            final Usuario usr = usuarioLogueado;
+            // Convertimos el Usuario local de la VentanaLogin al Usuario esperado por la VentanaPrincipal
+            final VentanaPrincipal.Usuario usrParaVentana = new VentanaPrincipal.Usuario(
+                usuarioLogueado.getNombres(),
+                usuarioLogueado.getCorreoUnab(),
+                usuarioLogueado.getCarrera(),
+                usuarioLogueado.getContrasena(),
+                usuarioLogueado.getEdad()
+            );
+            
             java.awt.EventQueue.invokeLater(() -> {
-                new VentanaPrincipal(usr).setVisible(true);
+                new VentanaPrincipal(usrParaVentana).setVisible(true);
             });
         } else {
             JOptionPane.showMessageDialog(this, "Usuario o contraseña incorrectos.\n(Prueba con usuario: 'unab' y clave: '123')", "Error de autenticación", JOptionPane.ERROR_MESSAGE);
@@ -309,7 +320,8 @@ public class VentanaLogin extends JFrame {
                     throw new NumberFormatException("La edad debe ser un número coherente.");
                 }
 
-                usuariosRegistrados.add(new Usuario(nombres, correo, carrera, pass, edad));
+                String fechaHoy = java.time.LocalDate.now().toString();
+                usuariosRegistrados.add(new Usuario(nombres, correo, carrera, pass, edad, fechaHoy));
                 JOptionPane.showMessageDialog(diagRegistro, "¡Cuenta institucional creada con éxito!\nYa puedes iniciar sesión.");
                 diagRegistro.dispose();
 
@@ -330,4 +342,34 @@ public class VentanaLogin extends JFrame {
             new VentanaLogin().setVisible(true);
         });
     }
-}
+
+    public static class Usuario {
+        private String nombres, correoUnab, carrera, contrasena, ultimaFechaIngreso;
+        private int edad, rachaDias;
+
+        public Usuario(String nombres, String correoUnab, String carrera, String contrasena, int edad, String ultimaFechaIngreso) {
+            this.nombres = nombres;
+            this.correoUnab = correoUnab;
+            this.carrera = carrera;
+            this.contrasena = contrasena;
+            this.edad = edad;
+            this.ultimaFechaIngreso = ultimaConexionValida(ultimaFechaIngreso);
+            this.rachaDias = 1;
+        }
+
+        private String ultimaConexionValida(String fecha) {
+            return (fecha == null || fecha.isEmpty()) ? java.time.LocalDate.now().toString() : fecha;
+        }
+
+        public String getNombres() { return nombres; }
+        public String getCorreoUnab() { return correoUnab; }
+        public String getCarrera() { return carrera; }
+        public String getContrasena() { return contrasena; }
+        public void setContrasena(String contrasena) { this.contrasena = contrasena; }
+        public int getEdad() { return edad; }
+        public int getRachaDias() { return rachaDias; }
+        public void setRachaDias(int rachaDias) { this.rachaDias = rachaDias; }
+        public String getUltimaFechaIngreso() { return ultimaFechaIngreso; }
+        public void setUltimaFechaIngreso(String ultimaFechaIngreso) { this.ultimaFechaIngreso = ultimaFechaIngreso; }
+    }
+} 
