@@ -1,4 +1,4 @@
-package proyectoed;
+package proyectoed.modelos;
 
 /**
  *
